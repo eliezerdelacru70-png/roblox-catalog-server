@@ -1,11 +1,12 @@
 const express = require("express");
 const cors = require("cors");
+const fetch = require("node-fetch");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔎 CATÁLOGO COMPLETO (CON DETALLES)
+// 🔎 CATÁLOGO COMPLETO
 app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
@@ -18,9 +19,17 @@ app.get("/api/catalog/search", async (req, res) => {
         if (cursor) url += `&cursor=${cursor}`;
 
         const response = await fetch(url);
-        const data = await response.json();
 
-        // 🔥 FORMATEAR PARA ROBLOX
+        // 🛡 evitar crash si Roblox falla
+        const text = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            return res.status(500).json({ error: "Respuesta inválida de Roblox", raw: text });
+        }
+
         const items = (data.data || []).map(item => ({
             id: item.id,
             name: item.name || "Item",
@@ -36,12 +45,12 @@ app.get("/api/catalog/search", async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Error fetching catalog" });
+        console.error("ERROR:", err);
+        res.status(500).json({ error: "Error en el servidor" });
     }
 });
 
-// 🧢 DETALLES EXTRA (para equipar luego)
+// 🧢 DETALLES PARA EQUIPAR
 app.get("/api/catalog/avatar", async (req, res) => {
     try {
         const ids = req.query.ids;
@@ -61,20 +70,22 @@ app.get("/api/catalog/avatar", async (req, res) => {
             body: JSON.stringify(body)
         });
 
-        const data = await response.json();
+        const text = await response.text();
+        const data = JSON.parse(text);
 
         res.json(data);
+
     } catch (err) {
-        res.status(500).json({ error: "Error fetching details" });
+        res.status(500).json({ error: "Error obteniendo detalles" });
     }
 });
 
 // 🟢 TEST
 app.get("/", (req, res) => {
-    res.send("Servidor catálogo funcionando 🚀");
+    res.send("Servidor funcionando 🚀");
 });
 
-// 🚀 IMPORTANTE PARA HOST
+// 🚀 PUERTO
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
