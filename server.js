@@ -5,14 +5,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔎 BUSCAR CATÁLOGO COMPLETO
+// 🔎 CATÁLOGO COMPLETO (CON DETALLES)
 app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
-        const limit = req.query.limit || 100; // máximo recomendado
+        const limit = req.query.limit || 100;
         const cursor = req.query.cursor || "";
 
-        let url = `https://catalog.roblox.com/v1/search/items?limit=${limit}&category=All`;
+        let url = `https://catalog.roblox.com/v1/search/items/details?limit=${limit}&category=All`;
 
         if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
         if (cursor) url += `&cursor=${cursor}`;
@@ -20,10 +20,10 @@ app.get("/api/catalog/search", async (req, res) => {
         const response = await fetch(url);
         const data = await response.json();
 
-        // 🧠 FORMATEAR DATA (para Roblox)
+        // 🔥 FORMATEAR PARA ROBLOX
         const items = (data.data || []).map(item => ({
             id: item.id,
-            name: item.name,
+            name: item.name || "Item",
             price: item.price || 0,
             creator: item.creatorName || "Unknown",
             type: item.itemType || "Asset",
@@ -41,7 +41,7 @@ app.get("/api/catalog/search", async (req, res) => {
     }
 });
 
-// 🧢 DETALLES (opcional para equipar luego)
+// 🧢 DETALLES EXTRA (para equipar luego)
 app.get("/api/catalog/avatar", async (req, res) => {
     try {
         const ids = req.query.ids;
@@ -74,7 +74,7 @@ app.get("/", (req, res) => {
     res.send("Servidor catálogo funcionando 🚀");
 });
 
-// 🚀 PORT (IMPORTANTE PARA RAILWAY)
+// 🚀 IMPORTANTE PARA HOST
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
