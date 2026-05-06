@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 
 app.get("/", (req, res) => {
-    res.send("SERVER OK 🔥");
+    res.json({ status: "ok" });
 });
 
 app.get("/api/catalog/search", async (req, res) => {
