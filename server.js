@@ -1,18 +1,17 @@
-const express = require("express");
-const cors = require("cors");
-const fetch = require("node-fetch");
+import express from "express";
+import cors from "cors";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// TEST
+// TEST (esto debe funcionar sí o sí)
 app.get("/", (req, res) => {
-    res.send("OK SERVER PRENDIDO 🔥");
+    res.send("SERVER OK 🔥");
 });
 
-// CATÁLOGO (USANDO ROPROXY)
+// CATÁLOGO
 app.get("/api/catalog/search", async (req, res) => {
     try {
         const limit = 30;
@@ -20,19 +19,18 @@ app.get("/api/catalog/search", async (req, res) => {
         const url = `https://catalog.roproxy.com/v1/search/items/details?limit=${limit}&category=All`;
 
         const response = await fetch(url);
-        const text = await response.text();
-        const data = JSON.parse(text);
+        const data = await response.json();
 
         res.json(data);
 
     } catch (err) {
         console.error("ERROR:", err);
-        res.status(500).json({ error: "FALLO EL SERVER" });
+        res.status(500).json({ error: "Server crash" });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log("Servidor corriendo en puerto " + PORT);
+    console.log("Server running on port " + PORT);
 });
