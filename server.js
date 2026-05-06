@@ -1,8 +1,9 @@
 app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
+        const cursor = req.query.cursor || "";
 
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&sortType=Relevance`;
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&sortType=Relevance`;
 
         const response = await fetch(url);
         const data = await response.json();
@@ -15,11 +16,14 @@ app.get("/api/catalog/search", async (req, res) => {
                 creator: item.creatorName || "Desconocido",
                 price: item.price || 0,
                 image: item.imageUrl,
-                type: item.itemType || "Unknown"
+                type: item.itemType
             };
         });
 
-        res.json({ data: cleaned });
+        res.json({
+            data: cleaned,
+            nextCursor: data.nextPageCursor || null
+        });
 
     } catch (err) {
         console.error(err);
