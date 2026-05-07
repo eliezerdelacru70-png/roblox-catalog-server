@@ -1,6 +1,8 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
+
+// Railway nos da el puerto automáticamente, si no usa el 8080
 const PORT = process.env.PORT || 8080;
 
 app.get('/api/catalog/search', async (req, res) => {
@@ -8,21 +10,29 @@ app.get('/api/catalog/search', async (req, res) => {
         const keyword = req.query.keyword || "cool";
         const cursor = req.query.cursor || "";
         
-        // Category 0 = TODO (3D, Clásico, Accesorios)
-        // Usamos subcategory 0 para no filtrar por tipo específico
-        const url = `https://catalog.roproxy.com/v1/search/items/details?category=0&subcategory=0&limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}`;
+        // URL para traer TODO (3D y Clásico)
+        const url = `https://catalog.roproxy.com/v1/search/items/details?category=0&limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}`;
 
         const response = await fetch(url);
-        const data = await response.json();
         
-        // Enviamos el objeto completo (incluyendo el nextPageCursor para el scroll)
-        res.status(200).json(data);
+        if (!response.ok) {
+            return res.status(200).json({ data: [] });
+        }
+
+        const data = await response.json();
+        res.json(data);
 
     } catch (err) {
-        console.error("Error:", err);
+        console.error("Error en servidor:", err.message);
         res.status(200).json({ data: [] });
     }
 });
 
-app.listen(PORT, '0.0.0.0');
-app.listen(PORT, '0.0.0.0');
+// Esto evita que el servidor se quede trabado si hay un error
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor activo en puerto ${PORT}`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log('El puerto estaba ocupado, reintentando...');
+    }
+});
