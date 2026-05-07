@@ -10,23 +10,25 @@ app.use(express.json());
 
 app.get('/api/catalog/search', async (req, res) => {
     try {
-        const keyword = req.query.keyword || '';
-        const cursor = req.query.cursor || '';
+        let { keyword, cursor } = req.query;
+        
+        // Si no hay keyword, ponemos una por defecto para que SIEMPRE cargue algo
+        const busquedaReal = (keyword && keyword.trim() !== "") ? keyword : "red"; 
+        const cursorReal = cursor || "";
 
-        // Category 0 y Subcategory 0 traen TODO el catálogo (3D, Ropa, Caras, etc.)
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=0&subcategory=0`;
+        // Category 0 = Todo el catálogo
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(busquedaReal)}&cursor=${cursorReal}&category=0`;
+
+        console.log(`Solicitando: ${url}`);
 
         const response = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
-            timeout: 10000 // 10 segundos para evitar el NetFail de Roblox
+            timeout: 10000
         });
-
-        if (!response.ok) return res.json({ data: [], nextCursor: "" });
 
         const data = await response.json();
         const items = data.data || [];
 
-        // Mapeamos con nombres simples que el LocalScript entenderá
         const cleaned = items.map(item => ({
             assetId: item.id,
             titulo: item.name || "Objeto",
@@ -39,9 +41,9 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Error en servidor:", err.message);
+        console.error("Error en Railway:", err.message);
         res.status(200).json({ data: [], nextCursor: "" });
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor Universal Corriendo en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor activo a las 5AM`));
