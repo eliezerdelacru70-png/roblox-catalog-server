@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch'); // Asegúrate de tenerlo en dependencies
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,14 +12,15 @@ app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
         const cursor = req.query.cursor || "";
-        const category = req.query.category || "All"; // Para Ropa, Animaciones, etc.
+        // Usamos categoría 1 (Ropa/Accesorios) por defecto si no se envía nada
+        const category = req.query.category || "1"; 
 
-        // URL Proproxy con soporte para categorías y cursores
         const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=${category}`;
 
         const response = await fetch(url);
         const data = await response.json();
 
+        // Limpiamos los datos para que Roblox los entienda fácil
         const cleaned = (data.data || []).map(item => ({
             id: item.id,
             name: item.name,
@@ -29,12 +30,12 @@ app.get("/api/catalog/search", async (req, res) => {
 
         res.json({
             data: cleaned,
-            nextCursor: data.nextPageCursor || null
+            nextCursor: data.nextPageCursor || ""
         });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "ERROR_SERVER" });
+        console.error("Error en servidor:", err);
+        res.status(500).json({ data: [], error: "ERROR_SERVER" });
     }
 });
 
