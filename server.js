@@ -3,35 +3,35 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
 
 app.get('/api/catalog/search', async (req, res) => {
     try {
-        const { keyword = "shirt", cursor = "" } = req.query;
+        const { keyword = "", cursor = "" } = req.query;
         
-        // Probamos con una URL que fuerza a traer ropa y accesorios populares
-        const url = `https://catalog.roproxy.com/v1/search/items/details?category=1&limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}`;
+        // category=0 y subcategory=0 busca en TODO el catálogo de Roblox
+        // salesType=1 asegura que sean objetos a la venta
+        const url = `https://catalog.roproxy.com/v1/search/items/details?category=0&subcategory=0&limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&salesType=1`;
 
-        console.log(`Pidiendo a Roblox: ${url}`);
+        console.log(`Buscando de todo: ${url}`);
 
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000
         });
 
         const data = await response.json();
-        
-        // Mapeamos los datos al formato que espera tu LocalScript
         const items = data.data || [];
+
         const cleaned = items.map(item => ({
             assetId: item.id,
             titulo: item.name || "Objeto",
             precio: item.price || 0
         }));
 
-        // IMPORTANTE: Devolvemos "data" y "nextCursor" (en inglés, como tu LocalScript)
         res.json({
             data: cleaned,
             nextCursor: data.nextPageCursor || ""
@@ -43,4 +43,6 @@ app.get('/api/catalog/search', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Catálogo TOTAL activo en puerto ${PORT}`);
+});
