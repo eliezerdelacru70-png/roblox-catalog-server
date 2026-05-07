@@ -10,28 +10,20 @@ app.use(express.json());
 
 app.get('/api/catalog/search', async (req, res) => {
     try {
-        const { keyword = "", cursor = "" } = req.query;
+        const { keyword = "shirt", cursor = "" } = req.query;
         
-        // URL Blindada: Si no hay keyword, busca por relevancia general
-        const queryParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30${queryParam}&cursor=${cursor}&category=1&subcategory=1`;
+        // URL MEJORADA: Busca ropa y accesorios populares si no hay keyword
+        const searchKeyword = keyword || "item";
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(searchKeyword)}&cursor=${cursor}&category=1`;
 
         const response = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         });
 
         const data = await response.json();
-        
-        // Si data.data no existe o está vacío, intentamos un fallback rápido
-        let items = data.data || [];
-        
-        if (items.length === 0 && !keyword) {
-            // Menú de emergencia: Si no hay nada, trae los más vendidos de ropa clásica
-            const fallbackRes = await fetch(`https://catalog.roproxy.com/v1/search/items/details?limit=30&category=3&subcategory=3`);
-            const fallbackData = await fallbackRes.json();
-            items = fallbackData.data || [];
-        }
+        const items = data.data || [];
 
+        // Mapeo exacto para el LocalScript
         const cleaned = items.map(item => ({
             assetId: item.id,
             titulo: item.name || "Objeto",
@@ -44,8 +36,9 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
     } catch (err) {
+        console.error("Error:", err);
         res.status(200).json({ data: [], nextCursor: "" });
     }
 });
 
-app.listen(PORT, () => console.log(`Server on ${PORT}`));
+app.listen(PORT, () => console.log(`Server on port ${PORT}`));
