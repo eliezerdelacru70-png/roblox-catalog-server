@@ -9,15 +9,12 @@ app.use(cors());
 
 app.get('/api/catalog/search', async (req, res) => {
     try {
-        const keyword = req.query.keyword || "";
+        const keyword = (req.query.keyword || "").trim();
         const cursor = req.query.cursor || "";
-        const limit = parseInt(req.query.limit) || 60;
+        const limit = Math.min(parseInt(req.query.limit) || 60, 120);
         const assetTypeIds = req.query.assetTypeIds || "";
 
-        let url = `https://catalog.roproxy.com/v2/search/items/details?` +
-            `category=all&` +
-            `limit=${limit}&` +
-            `sortType=3`;   // 3 = Más vendidos
+        let url = `https://catalog.roproxy.com/v2/search/items/details?category=all&limit=${limit}&sortType=3`;
 
         if (keyword) {
             url += `&keyword=${encodeURIComponent(keyword)}`;
@@ -29,7 +26,7 @@ app.get('/api/catalog/search', async (req, res) => {
             url += `&assetTypeIds=${assetTypeIds}`;
         }
 
-        console.log("🔗 Llamando a:", url);
+        console.log("🔗 Llamando a roproxy:", url);
 
         const response = await fetch(url, {
             headers: { 
@@ -39,23 +36,28 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
         if (!response.ok) {
-            console.error(`❌ roproxy error: ${response.status}`);
-            throw new Error(`roproxy ${response.status}`);
+            console.error(`❌ roproxy devolvió ${response.status}`);
+            return res.status(502).json({ 
+                data: [], 
+                nextPageCursor: "",
+                error: `roproxy error ${response.status}`
+            });
         }
         
         const data = await response.json();
+        console.log(`✅ roproxy OK - ${data.data ? data.data.length : 0} items`);
         res.json(data);
 
     } catch (err) {
-        console.error("❌ Error en servidor:", err.message);
+        console.error("❌ Error crítico en servidor:", err.message);
         res.status(500).json({ 
             data: [], 
             nextPageCursor: "",
-            error: "Error interno del servidor"
+            error: err.message 
         });
     }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Servidor catálogo corriendo en puerto ${PORT}`);
+    console.log(`✅ Servidor corriendo en puerto ${PORT}`);
 });
