@@ -43,6 +43,4 @@ app.get('/api/catalog/search', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor reparado en puerto ${PORT}`));
-
-app.listen(PORT, () => console.log(`Servidor activo a las 5AM`));
+app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
