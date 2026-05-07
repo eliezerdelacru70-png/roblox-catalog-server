@@ -10,20 +10,23 @@ app.use(express.json());
 
 app.get('/api/catalog/search', async (req, res) => {
     try {
-        const { keyword = "shirt", cursor = "" } = req.query;
-        
-        // URL MEJORADA: Busca ropa y accesorios populares si no hay keyword
-        const searchKeyword = keyword || "item";
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(searchKeyword)}&cursor=${cursor}&category=1`;
+        const keyword = req.query.keyword || '';
+        const cursor = req.query.cursor || '';
+
+        // Category 0 y Subcategory 0 traen TODO el catálogo (3D, Ropa, Caras, etc.)
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=0&subcategory=0`;
 
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000 // 10 segundos para evitar el NetFail de Roblox
         });
+
+        if (!response.ok) return res.json({ data: [], nextCursor: "" });
 
         const data = await response.json();
         const items = data.data || [];
 
-        // Mapeo exacto para el LocalScript
+        // Mapeamos con nombres simples que el LocalScript entenderá
         const cleaned = items.map(item => ({
             assetId: item.id,
             titulo: item.name || "Objeto",
@@ -36,9 +39,9 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Error:", err);
+        console.error("Error en servidor:", err.message);
         res.status(200).json({ data: [], nextCursor: "" });
     }
 });
 
-app.listen(PORT, () => console.log(`Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor Universal Corriendo en puerto ${PORT}`));
