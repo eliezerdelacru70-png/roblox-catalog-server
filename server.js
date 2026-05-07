@@ -12,10 +12,10 @@ app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
         const cursor = req.query.cursor || "";
-        // Usamos categoría 1 (Ropa/Accesorios) por defecto si no se envía nada
-        const category = req.query.category || "1"; 
+        // Usamos categoría 0 (todas las categorías) por defecto si no se envía nada
+        const category = req.query.category || "0";
 
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=${category}`;
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=50&keyword=${encodeURIComponent(keyword)}&cursor=${encodeURIComponent(cursor)}&category=${category}`;
 
         let data;
         try {
