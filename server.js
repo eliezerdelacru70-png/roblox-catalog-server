@@ -17,11 +17,24 @@ app.get("/api/catalog/search", async (req, res) => {
 
         const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=${category}`;
 
-        const response = await fetch(url);
-        const data = await response.json();
+        let data;
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                console.error(`Proxy returned non-OK status: ${response.status} ${response.statusText} for URL: ${url}`);
+                return res.json({ data: [], error: "PROXY_ERROR" });
+            }
+
+            data = await response.json();
+        } catch (fetchErr) {
+            console.error("Fetch or JSON parse error:", fetchErr);
+            return res.json({ data: [], error: "PROXY_ERROR" });
+        }
 
         // Limpiamos los datos para que Roblox los entienda fácil
-        const cleaned = (data.data || []).map(item => ({
+        const items = Array.isArray(data.data) ? data.data : [];
+        const cleaned = items.map(item => ({
             id: item.id,
             name: item.name,
             price: item.price || 0,
@@ -34,8 +47,8 @@ app.get("/api/catalog/search", async (req, res) => {
         });
 
     } catch (err) {
-        console.error("Error en servidor:", err);
-        res.status(500).json({ data: [], error: "ERROR_SERVER" });
+        console.error("Unexpected server error:", err);
+        res.json({ data: [], error: "PROXY_ERROR" });
     }
 });
 
