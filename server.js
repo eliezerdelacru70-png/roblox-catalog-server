@@ -12,10 +12,10 @@ app.get("/api/catalog/search", async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
         const cursor = req.query.cursor || "";
-        // Usamos categoría 0 (todas las categorías) por defecto si no se envía nada
-        const category = req.query.category || "0";
 
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=50&keyword=${encodeURIComponent(keyword)}&cursor=${encodeURIComponent(cursor)}&category=${category}`;
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=0&subcategory=0`;
+
+        console.log(`Fetching catalog URL: ${url}`);
 
         let data;
         try {
@@ -23,22 +23,21 @@ app.get("/api/catalog/search", async (req, res) => {
 
             if (!response.ok) {
                 console.error(`Proxy returned non-OK status: ${response.status} ${response.statusText} for URL: ${url}`);
-                return res.json({ data: [], error: "PROXY_ERROR" });
+                return res.json({ data: [], nextCursor: "" });
             }
 
             data = await response.json();
+            console.log(`Catalog response received. Items: ${Array.isArray(data.data) ? data.data.length : 0}, nextCursor: ${data.nextPageCursor || ""}`);
         } catch (fetchErr) {
             console.error("Fetch or JSON parse error:", fetchErr);
-            return res.json({ data: [], error: "PROXY_ERROR" });
+            return res.json({ data: [], nextCursor: "" });
         }
 
-        // Limpiamos los datos para que Roblox los entienda fácil
         const items = Array.isArray(data.data) ? data.data : [];
         const cleaned = items.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price || 0,
-            itemType: item.itemType
+            assetId: item.id,
+            titulo: item.name,
+            precio: item.price != null ? item.price : 0
         }));
 
         res.json({
@@ -48,7 +47,7 @@ app.get("/api/catalog/search", async (req, res) => {
 
     } catch (err) {
         console.error("Unexpected server error:", err);
-        res.json({ data: [], error: "PROXY_ERROR" });
+        res.json({ data: [], nextCursor: "" });
     }
 });
 
