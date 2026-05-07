@@ -11,18 +11,17 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || "";
         const cursor = req.query.cursor || "";
-        const limit = req.query.limit || "30";
-        const assetTypeIds = req.query.assetTypeIds || "";   // nuevo
+        const limit = req.query.limit || "60";
+        const assetTypeIds = req.query.assetTypeIds || "";
 
         let url = `https://catalog.roproxy.com/v2/search/items/details?` +
             `category=all&` +
             `limit=${limit}&` +
+            `sortType=2&` +           // ← Sort por popularidad (mejor que gratis primero)
             `keyword=${encodeURIComponent(keyword)}&` +
             `cursor=${cursor}`;
 
-        if (assetTypeIds) {
-            url += `&assetTypeIds=${assetTypeIds}`;
-        }
+        if (assetTypeIds) url += `&assetTypeIds=${assetTypeIds}`;
 
         const response = await fetch(url, {
             headers: { 'User-Agent': 'Roblox/WinInet' }
@@ -40,5 +39,5 @@ app.get('/api/catalog/search', async (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Servidor catálogo corriendo en ${PORT}`);
+    console.log(`✅ Servidor en puerto ${PORT}`);
 });
