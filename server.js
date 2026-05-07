@@ -8,14 +8,19 @@ app.get('/api/catalog/search', async (req, res) => {
         const keyword = req.query.keyword || "black";
         const cursor = req.query.cursor || "";
         
-        // Subimos el limit a 120 para que traiga mucha más ropa de golpe
-        const url = `https://catalog.roproxy.com/v1/search/items/details?category=0&limit=120&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}`;
+        // Bajamos a 60 para evitar que el Proxy nos bloquee por exceso de carga
+        const url = `https://catalog.roproxy.com/v1/search/items/details?category=0&limit=60&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}`;
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'Roblox/Linux' }
+        });
+
+        if (!response.ok) throw new Error("Error en Proxy");
+
         const data = await response.json();
-        
         res.json(data);
     } catch (err) {
+        console.error(err.message);
         res.json({ data: [], nextPageCursor: "" });
     }
 });
