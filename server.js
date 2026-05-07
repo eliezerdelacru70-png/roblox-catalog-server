@@ -15,7 +15,7 @@ app.get("/api/catalog/search", async (req, res) => {
         // Usamos categoría 0 (todas las categorías) por defecto si no se envía nada
         const category = req.query.category || "0";
 
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=50&keyword=${encodeURIComponent(keyword)}&cursor=${encodeURIComponent(cursor)}&category=${category}`;
+        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=0&subcategory=0`;
 
         let data;
         try {
@@ -23,22 +23,21 @@ app.get("/api/catalog/search", async (req, res) => {
 
             if (!response.ok) {
                 console.error(`Proxy returned non-OK status: ${response.status} ${response.statusText} for URL: ${url}`);
-                return res.json({ data: [], error: "PROXY_ERROR" });
+                return res.status(200).json({ data: [], nextCursor: "" });
             }
 
             data = await response.json();
         } catch (fetchErr) {
             console.error("Fetch or JSON parse error:", fetchErr);
-            return res.json({ data: [], error: "PROXY_ERROR" });
+            return res.status(200).json({ data: [], nextCursor: "" });
         }
 
-        // Limpiamos los datos para que Roblox los entienda fácil
+        // Mapeamos los datos al formato exacto que espera el cliente de Roblox
         const items = Array.isArray(data.data) ? data.data : [];
         const cleaned = items.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price || 0,
-            itemType: item.itemType
+            assetId: item.id,
+            titulo: item.name,
+            precio: item.price != null ? item.price : 0
         }));
 
         res.json({
@@ -48,7 +47,7 @@ app.get("/api/catalog/search", async (req, res) => {
 
     } catch (err) {
         console.error("Unexpected server error:", err);
-        res.json({ data: [], error: "PROXY_ERROR" });
+        res.status(200).json({ data: [], nextCursor: "" });
     }
 });
 
