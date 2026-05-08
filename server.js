@@ -12,40 +12,79 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || '';
         const cursor = req.query.cursor || '';
+        const limit = req.query.limit || '60';
 
-        const url = `https://catalog.roproxy.com/v1/search/items/details?limit=30&keyword=${encodeURIComponent(keyword)}&cursor=${cursor}&category=0&subcategory=0`;
+        // Mejor endpoint + orden por más vendidos
+        let url = `https://catalog.roproxy.com/v2/search/items/details?` +
+                  `category=all&` +
+                  `limit=${limit}&` +
+                  `sortType=3`;   // 3 = Más vendidos
 
-        console.log(`Fetching catalog URL: ${url}`);
+        if (keyword) {
+            url += `&keyword=${encodeURIComponent(keyword)}`;
+        }
+        if (cursor) {
+            url += `&cursor=${cursor}`;
+        }
+
+        console.log(`🔗 Fetching: ${url}`);
 
         const response = await fetch(url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json',
-                'Accept-Language': 'en-US,en;q=0.9'
+                'User-Agent': 'Roblox/WinInet',
+                'Accept': 'application/json'
             }
         });
-        console.log(`Response status: ${response.status}`);
+
+        if (!response.ok) {
+            throw new Error(`roproxy error: ${response.status}`);
+        }
 
         const data = await response.json();
-        console.log(`Items received: ${Array.isArray(data.data) ? data.data.length : 0}`);
-        console.log(`Next cursor: ${data.nextPageCursor || ''}`);
 
-        const items = Array.isArray(data.data) ? data.data : [];
-        const cleaned = items.map(item => ({
-            assetId: item.id,
-            titulo: item.name,
-            precio: item.price || 0
-        }));
+        // Transformar al formato que quieres
+        const items = Array.isArray(data.data) ? data.data.map(item => ({
+            Id: item.id,
+            Name: item.name || "Sin nombre",
+            ItemType: "Asset",
+            AssetType: item.assetType || "Unknown",
+            Price: item.price || 0,
+            ProductId: item.productId || null,
+            IsPurchasable: true,
+            IsOffSale: false,
+            CreatorName: item.creator?.name || "Unknown",
+            CreatorTargetId: item.creator?.id || null,
+            CreatorType: item.creator?.type || "User",
+            Description: item.description || "",
+            Owned: false,
+            FavoriteCount: item.favoriteCount || 0,
+            PurchaseCount: 0,
+            ItemRestrictions: [],
+            ItemStatus: [],
+            SaleLocation: "Website",
+            LowestPrice: null,
+            LowestResalePrice: null,
+            PriceStatus: null
+        })) : [];
 
         res.json({
-            data: cleaned,
-            nextCursor: data.nextPageCursor || ''
+            items: items,
+            hasMore: !!data.nextPageCursor,
+            nextCursor: data.nextPageCursor || null
         });
 
+        console.log(`✅ Enviados ${items.length} items | NextCursor: ${data.nextPageCursor ? 'Sí' : 'No'}`);
+
     } catch (err) {
-        console.log(`Error fetching catalog: ${err}`);
-        res.status(200).json({ data: [], nextCursor: '' });
+        console.error(`❌ Error: ${err.message}`);
+        res.status(200).json({
+            items: [],
+            hasMore: false,
+            nextCursor: null
+        });
     }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Servidor corriendo en puerto ${PORT}`);
+});
