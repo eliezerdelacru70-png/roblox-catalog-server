@@ -11,7 +11,7 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = (req.query.keyword || "").trim();
         const cursor = req.query.cursor || "";
-        const limit = Math.min(parseInt(req.query.limit) || 60, 120);
+        const limit = Math.min(parseInt(req.query.limit) || 150, 250);
         const assetTypeIds = req.query.assetTypeIds || "";
 
         let url = `https://catalog.roproxy.com/v2/search/items/details?category=all&limit=${limit}&sortType=3`;
