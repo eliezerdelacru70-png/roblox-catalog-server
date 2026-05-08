@@ -12,7 +12,7 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || '';
         const cursor = req.query.cursor || '';
-        const limit = req.query.limit || '60';
+        const limit = req.query.limit || '150';
 
         // Mejor endpoint + orden por más vendidos
         let url = `https://catalog.roproxy.com/v2/search/items/details?` +
