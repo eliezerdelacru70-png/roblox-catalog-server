@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// Mapeo de números de AssetType a nombres que Roblox espera
+// Mapeo COMPLETO de números de AssetType a nombres que Roblox espera
 const ASSET_TYPE_NAMES = {
     1: "Hat",
     2: "Hair",
@@ -57,7 +57,30 @@ const ASSET_TYPE_NAMES = {
     52: "Head",
     53: "Face",
     54: "AvatarPart",
-    55: "AvatarAnimation"
+    55: "AvatarAnimation",
+    56: "EyebrowAccessory",
+    57: "EyelashAccessory",
+    58: "HairAccessory",
+    59: "HatAccessory",
+    60: "HeadAccessory",
+    61: "FaceAccessory",
+    62: "NeckAccessory",
+    63: "ShoulderAccessory",
+    64: "FrontAccessory",
+    65: "BackAccessory",
+    66: "WaistAccessory",
+    67: "ClimbAccessory",
+    68: "RunAccessory",
+    69: "JumpAccessory",
+    70: "ShirtAccessory",
+    71: "PantsAccessory",
+    72: "TShirtAccessory",
+    73: "JacketAccessory",
+    74: "SweaterAccessory",
+    75: "ShortsAccessory",
+    76: "LeftShoeAccessory",
+    77: "RightShoeAccessory",
+    78: "DressSkirtAccessory"
 };
 
 // Mapeo inverso: nombre -> número
@@ -90,7 +113,7 @@ const ENUM_TO_ASSET_TYPE = {
 };
 
 function getAssetTypeName(assetTypeId) {
-    return ASSET_TYPE_NAMES[assetTypeId] || "Unknown";
+    return ASSET_TYPE_NAMES[assetTypeId] || "Hat";
 }
 
 function matchesAssetType(itemAssetType, requestedTypes) {
@@ -112,7 +135,6 @@ app.get('/api/catalog/search', async (req, res) => {
         const limit = req.query.limit || '30';
         const assetTypesParam = req.query.assetTypes || '';
 
-        // Parsear los assetTypes solicitados
         let requestedAssetTypes = [];
         if (assetTypesParam) {
             requestedAssetTypes = assetTypesParam.split(',').map(t => t.trim());
@@ -145,15 +167,12 @@ app.get('/api/catalog/search', async (req, res) => {
 
         const data = await response.json();
 
-        // Filtrar y transformar items
         let items = Array.isArray(data.data) ? data.data : [];
         
-        // Filtrar por assetType si se especificó
         if (requestedAssetTypes.length > 0) {
             items = items.filter(item => matchesAssetType(item.assetType, requestedAssetTypes));
         }
 
-        // Transformar al formato que Roblox espera
         items = items.map(item => ({
             Id: item.id,
             Name: item.name || "Sin nombre",
