@@ -12,13 +12,15 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || '';
         const cursor = req.query.cursor || '';
-        const limit = req.query.limit || '150';
+        const limit = req.query.limit || '30';
+        const assetTypes = req.query.assetTypes || '';
+        const bundleTypes = req.query.bundleTypes || '';
 
-        // Mejor endpoint + orden por más vendidos
+        // Endpoint de roproxy
         let url = `https://catalog.roproxy.com/v2/search/items/details?` +
                   `category=all&` +
                   `limit=${limit}&` +
-                  `sortType=3`;   // 3 = Más vendidos
+                  `sortType=3`;
 
         if (keyword) {
             url += `&keyword=${encodeURIComponent(keyword)}`;
@@ -42,29 +44,30 @@ app.get('/api/catalog/search', async (req, res) => {
 
         const data = await response.json();
 
-        // Transformar al formato que quieres
+        // Transformar al formato que Roblox espera
         const items = Array.isArray(data.data) ? data.data.map(item => ({
             Id: item.id,
             Name: item.name || "Sin nombre",
             ItemType: "Asset",
             AssetType: item.assetType || "Unknown",
             Price: item.price || 0,
-            ProductId: item.productId || null,
+            ProductId: item.productId || item.id,
             IsPurchasable: true,
             IsOffSale: false,
             CreatorName: item.creator?.name || "Unknown",
-            CreatorTargetId: item.creator?.id || null,
+            CreatorTargetId: item.creator?.id || 0,
             CreatorType: item.creator?.type || "User",
+            CreatorHasVerifiedBadge: false,
             Description: item.description || "",
             Owned: false,
             FavoriteCount: item.favoriteCount || 0,
-            PurchaseCount: 0,
+            PurchaseCount: item.purchaseCount || 0,
             ItemRestrictions: [],
             ItemStatus: [],
             SaleLocation: "Website",
             LowestPrice: null,
             LowestResalePrice: null,
-            PriceStatus: null
+            PriceStatus: item.price ? null : "Free"
         })) : [];
 
         res.json({
