@@ -131,7 +131,7 @@ app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || '';
         const cursor = req.query.cursor || '';
-        const limit = req.query.limit || '30';
+        const limit = req.query.limit || '200';
         const assetTypesParam = req.query.assetTypes || '';
 
         let requestedAssetTypes = [];
