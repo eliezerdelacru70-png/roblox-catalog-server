@@ -60,8 +60,49 @@ const ASSET_TYPE_NAMES = {
     55: "AvatarAnimation"
 };
 
+// Mapeo inverso: nombre -> número
+const ASSET_TYPE_NUMBERS = {};
+for (const [num, name] of Object.entries(ASSET_TYPE_NAMES)) {
+    ASSET_TYPE_NUMBERS[name] = parseInt(num);
+}
+
+// Mapeo de nombres de Enum a nombres de AssetType
+const ENUM_TO_ASSET_TYPE = {
+    "Hat": "Hat",
+    "HairAccessory": "Hair",
+    "EyebrowAccessory": "Eyebrow",
+    "EyelashAccessory": "Eyelash",
+    "FaceAccessory": "FaceAccessory",
+    "NeckAccessory": "NeckAccessory",
+    "ShoulderAccessory": "ShoulderAccessory",
+    "FrontAccessory": "FrontAccessory",
+    "BackAccessory": "BackAccessory",
+    "WaistAccessory": "WaistAccessory",
+    "ShirtAccessory": "Shirt",
+    "SweaterAccessory": "Sweater",
+    "TShirtAccessory": "TShirt",
+    "JacketAccessory": "Jacket",
+    "PantsAccessory": "Pants",
+    "ShortsAccessory": "Shorts",
+    "DressSkirtAccessory": "Dress",
+    "Shirt": "Shirt",
+    "Pants": "Pants"
+};
+
 function getAssetTypeName(assetTypeId) {
     return ASSET_TYPE_NAMES[assetTypeId] || "Unknown";
+}
+
+function matchesAssetType(itemAssetType, requestedTypes) {
+    if (!requestedTypes || requestedTypes.length === 0) return true;
+    
+    const itemTypeName = getAssetTypeName(itemAssetType);
+    
+    for (const requestedType of requestedTypes) {
+        const typeName = ENUM_TO_ASSET_TYPE[requestedType] || requestedType;
+        if (itemTypeName === typeName) return true;
+    }
+    return false;
 }
 
 app.get('/api/catalog/search', async (req, res) => {
@@ -69,6 +110,13 @@ app.get('/api/catalog/search', async (req, res) => {
         const keyword = req.query.keyword || '';
         const cursor = req.query.cursor || '';
         const limit = req.query.limit || '30';
+        const assetTypesParam = req.query.assetTypes || '';
+
+        // Parsear los assetTypes solicitados
+        let requestedAssetTypes = [];
+        if (assetTypesParam) {
+            requestedAssetTypes = assetTypesParam.split(',').map(t => t.trim());
+        }
 
         let url = `https://catalog.roproxy.com/v2/search/items/details?` +
                   `category=all&` +
@@ -97,7 +145,16 @@ app.get('/api/catalog/search', async (req, res) => {
 
         const data = await response.json();
 
-        const items = Array.isArray(data.data) ? data.data.map(item => ({
+        // Filtrar y transformar items
+        let items = Array.isArray(data.data) ? data.data : [];
+        
+        // Filtrar por assetType si se especificó
+        if (requestedAssetTypes.length > 0) {
+            items = items.filter(item => matchesAssetType(item.assetType, requestedAssetTypes));
+        }
+
+        // Transformar al formato que Roblox espera
+        items = items.map(item => ({
             Id: item.id,
             Name: item.name || "Sin nombre",
             ItemType: "Asset",
@@ -120,7 +177,7 @@ app.get('/api/catalog/search', async (req, res) => {
             LowestPrice: null,
             LowestResalePrice: null,
             PriceStatus: item.price ? null : "Free"
-        })) : [];
+        }));
 
         res.json({
             items: items,
