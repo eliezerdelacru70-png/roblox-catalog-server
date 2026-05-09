@@ -8,24 +8,24 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// Mapeo COMPLETO de números de AssetType a nombres que Roblox espera
+// Mapeo de números de AssetType a nombres VÁLIDOS de Enum.AvatarAssetType
 const ASSET_TYPE_NAMES = {
     1: "Hat",
-    2: "Hair",
+    2: "HairAccessory",
     3: "Face",
-    4: "Eyebrow",
-    5: "Eyelash",
+    4: "EyebrowAccessory",
+    5: "EyelashAccessory",
     6: "Shirt",
     7: "Pants",
     8: "TShirt",
     9: "ShirtGraphic",
-    10: "Shorts",
-    11: "LeftShoe",
-    12: "RightShoe",
-    13: "Dress",
-    14: "Skirt",
-    15: "Jacket",
-    16: "Sweater",
+    10: "ShortsAccessory",
+    11: "LeftShoeAccessory",
+    12: "RightShoeAccessory",
+    13: "DressSkirtAccessory",
+    14: "DressSkirtAccessory",
+    15: "JacketAccessory",
+    16: "SweaterAccessory",
     17: "TShirt",
     18: "Pants",
     19: "Shirt",
@@ -33,15 +33,15 @@ const ASSET_TYPE_NAMES = {
     28: "Face",
     29: "Gear",
     30: "Hat",
-    31: "Hair",
-    32: "Eyebrow",
-    33: "Eyelash",
-    34: "LeftShoe",
-    35: "RightShoe",
-    36: "Dress",
-    37: "Skirt",
-    38: "Jacket",
-    39: "Sweater",
+    31: "HairAccessory",
+    32: "EyebrowAccessory",
+    33: "EyelashAccessory",
+    34: "LeftShoeAccessory",
+    35: "RightShoeAccessory",
+    36: "DressSkirtAccessory",
+    37: "DressSkirtAccessory",
+    38: "JacketAccessory",
+    39: "SweaterAccessory",
     40: "TShirt",
     41: "Gear",
     42: "FaceAccessory",
@@ -50,28 +50,27 @@ const ASSET_TYPE_NAMES = {
     45: "FrontAccessory",
     46: "BackAccessory",
     47: "WaistAccessory",
-    48: "ClimbAccessory",
-    49: "RunAccessory",
-    50: "JumpAccessory",
+    48: "ClimbAnimation",
+    49: "RunAnimation",
+    50: "JumpAnimation",
     51: "EmoteAnimation",
     52: "Head",
     53: "Face",
-    54: "AvatarPart",
-    55: "AvatarAnimation",
-    56: "EyebrowAccessory",
-    57: "EyelashAccessory",
-    58: "HairAccessory",
-    59: "HatAccessory",
-    60: "HeadAccessory",
+    54: "Torso",
+    55: "RightArm",
+    56: "LeftArm",
+    57: "LeftLeg",
+    58: "RightLeg",
+    59: "DynamicHead",
     61: "FaceAccessory",
     62: "NeckAccessory",
     63: "ShoulderAccessory",
     64: "FrontAccessory",
     65: "BackAccessory",
     66: "WaistAccessory",
-    67: "ClimbAccessory",
-    68: "RunAccessory",
-    69: "JumpAccessory",
+    67: "ClimbAnimation",
+    68: "RunAnimation",
+    69: "JumpAnimation",
     70: "ShirtAccessory",
     71: "PantsAccessory",
     72: "TShirtAccessory",
@@ -83,33 +82,33 @@ const ASSET_TYPE_NAMES = {
     78: "DressSkirtAccessory"
 };
 
-// Mapeo inverso: nombre -> número
-const ASSET_TYPE_NUMBERS = {};
-for (const [num, name] of Object.entries(ASSET_TYPE_NAMES)) {
-    ASSET_TYPE_NUMBERS[name] = parseInt(num);
-}
-
-// Mapeo de nombres de Enum a nombres de AssetType
+// Mapeo de nombres de Enum a nombres de AssetType para filtrado
 const ENUM_TO_ASSET_TYPE = {
     "Hat": "Hat",
-    "HairAccessory": "Hair",
-    "EyebrowAccessory": "Eyebrow",
-    "EyelashAccessory": "Eyelash",
+    "HairAccessory": "HairAccessory",
+    "EyebrowAccessory": "EyebrowAccessory",
+    "EyelashAccessory": "EyelashAccessory",
     "FaceAccessory": "FaceAccessory",
     "NeckAccessory": "NeckAccessory",
     "ShoulderAccessory": "ShoulderAccessory",
     "FrontAccessory": "FrontAccessory",
     "BackAccessory": "BackAccessory",
     "WaistAccessory": "WaistAccessory",
-    "ShirtAccessory": "Shirt",
-    "SweaterAccessory": "Sweater",
-    "TShirtAccessory": "TShirt",
-    "JacketAccessory": "Jacket",
-    "PantsAccessory": "Pants",
-    "ShortsAccessory": "Shorts",
-    "DressSkirtAccessory": "Dress",
+    "ShirtAccessory": "ShirtAccessory",
+    "SweaterAccessory": "SweaterAccessory",
+    "TShirtAccessory": "TShirtAccessory",
+    "JacketAccessory": "JacketAccessory",
+    "PantsAccessory": "PantsAccessory",
+    "ShortsAccessory": "ShortsAccessory",
+    "DressSkirtAccessory": "DressSkirtAccessory",
+    "LeftShoeAccessory": "LeftShoeAccessory",
+    "RightShoeAccessory": "RightShoeAccessory",
     "Shirt": "Shirt",
-    "Pants": "Pants"
+    "Pants": "Pants",
+    "TShirt": "TShirt",
+    "Gear": "Gear",
+    "Face": "Face",
+    "Head": "Head"
 };
 
 function getAssetTypeName(assetTypeId) {
@@ -182,7 +181,7 @@ app.get('/api/catalog/search', async (req, res) => {
             ProductId: item.productId || item.id,
             IsPurchasable: true,
             IsOffSale: false,
-            CreatorName: item.creator?.name || "Unknown",
+            CreatorName: item.creator?.name || "Desconocido",
             CreatorTargetId: item.creator?.id || 0,
             CreatorType: item.creator?.type || "User",
             CreatorHasVerifiedBadge: false,
@@ -195,7 +194,7 @@ app.get('/api/catalog/search', async (req, res) => {
             SaleLocation: "Website",
             LowestPrice: null,
             LowestResalePrice: null,
-            PriceStatus: item.price ? null : "Free"
+            PriceStatus: item.price ? null : "Gratis"
         }));
 
         res.json({
