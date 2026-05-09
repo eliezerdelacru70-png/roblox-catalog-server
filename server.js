@@ -134,6 +134,8 @@ app.get('/api/catalog/search', async (req, res) => {
             const assetData = await assetResponse.json();
             let assetItems = Array.isArray(assetData.data) ? assetData.data : [];
 
+            console.log(`📦 Recibidos ${assetItems.length} assets de la API`);
+
             if (requestedAssetTypes.length > 0) {
                 assetItems = assetItems.filter(item => matchesAssetType(item.assetType, requestedAssetTypes));
             }
@@ -148,19 +150,19 @@ app.get('/api/catalog/search', async (req, res) => {
                     ProductId: item.productId || item.id,
                     IsPurchasable: true,
                     IsOffSale: false,
-                    CreatorName: item.creator?.name || "Desconocido",
-                    CreatorTargetId: item.creator?.id || 0,
-                    CreatorType: item.creator?.type || "User",
-                    CreatorHasVerifiedBadge: item.creator?.hasVerifiedBadge || false,
+                    CreatorName: item.creatorName || "Desconocido",
+                    CreatorTargetId: item.creatorTargetId || 0,
+                    CreatorType: item.creatorType || "User",
+                    CreatorHasVerifiedBadge: item.creatorHasVerifiedBadge || false,
                     Description: item.description || "",
                     Owned: false,
                     FavoriteCount: item.favoriteCount || 0,
                     PurchaseCount: item.purchaseCount || 0,
-                    ItemRestrictions: [],
-                    ItemStatus: [],
+                    ItemRestrictions: item.itemRestrictions || [],
+                    ItemStatus: item.itemStatus || [],
                     SaleLocation: "Website",
-                    LowestPrice: null,
-                    LowestResalePrice: null,
+                    LowestPrice: item.lowestPrice || null,
+                    LowestResalePrice: item.lowestResalePrice || null,
                     PriceStatus: item.price ? null : "Gratis"
                 });
             });
@@ -184,6 +186,8 @@ app.get('/api/catalog/search', async (req, res) => {
                 const bundleData = await bundleResponse.json();
                 let bundleItems = Array.isArray(bundleData.data) ? bundleData.data : [];
 
+                console.log(`📦 Recibidos ${bundleItems.length} bundles de la API`);
+
                 if (requestedBundleTypes.length > 0) {
                     bundleItems = bundleItems.filter(item => matchesBundleType(item.bundleType, requestedBundleTypes));
                 }
@@ -198,19 +202,19 @@ app.get('/api/catalog/search', async (req, res) => {
                         ProductId: item.productId || item.id,
                         IsPurchasable: true,
                         IsOffSale: false,
-                        CreatorName: item.creator?.name || "Desconocido",
-                        CreatorTargetId: item.creator?.id || 0,
-                        CreatorType: item.creator?.type || "User",
-                        CreatorHasVerifiedBadge: item.creator?.hasVerifiedBadge || false,
+                        CreatorName: item.creatorName || "Desconocido",
+                        CreatorTargetId: item.creatorTargetId || 0,
+                        CreatorType: item.creatorType || "User",
+                        CreatorHasVerifiedBadge: item.creatorHasVerifiedBadge || false,
                         Description: item.description || "",
                         Owned: false,
                         FavoriteCount: item.favoriteCount || 0,
                         PurchaseCount: item.purchaseCount || 0,
-                        ItemRestrictions: [],
-                        ItemStatus: [],
+                        ItemRestrictions: item.itemRestrictions || [],
+                        ItemStatus: item.itemStatus || [],
                         SaleLocation: "Website",
-                        LowestPrice: null,
-                        LowestResalePrice: null,
+                        LowestPrice: item.lowestPrice || null,
+                        LowestResalePrice: item.lowestResalePrice || null,
                         PriceStatus: item.price ? null : "Gratis"
                     });
                 });
@@ -218,12 +222,10 @@ app.get('/api/catalog/search', async (req, res) => {
         }
 
         // ===== APLICAR LÍMITE POR CREADOR =====
+        const itemsBeforeLimit = allItems.length;
         allItems = limitItemsPerCreator(allItems, MAX_ITEMS_PER_CREATOR);
 
-        // ===== MEZCLAR ITEMS PARA VARIEDAD =====
-        allItems.sort(() => Math.random() - 0.5);
-
-        console.log(`✅ Enviados ${allItems.length} items (limitados a ${MAX_ITEMS_PER_CREATOR} por creador)`);
+        console.log(`✅ Enviados ${allItems.length} items (de ${itemsBeforeLimit} totales, limitados a ${MAX_ITEMS_PER_CREATOR} por creador)`);
 
         res.json({
             items: allItems,
