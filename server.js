@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// Mapeo centrado en Animaciones y Emotes
 const ASSET_TYPE_NAMES = {
     24: "Animation",
     48: "ClimbAnimation",
@@ -18,7 +17,7 @@ const ASSET_TYPE_NAMES = {
     52: "IdleAnimation",
     53: "WalkAnimation",
     54: "PoseAnimation",
-    61: "EmoteAnimation" // Este es el principal para emotes del catálogo
+    61: "EmoteAnimation"
 };
 
 function getAssetTypeName(assetTypeId) {
@@ -28,21 +27,17 @@ function getAssetTypeName(assetTypeId) {
 app.get('/api/catalog/search', async (req, res) => {
     try {
         const keyword = req.query.keyword || '';
-        const cursor = req.query.cursor || '';
-        const limit = req.query.limit || '100';
+        const limit = req.query.limit || '50';
 
-        // URL optimizada para buscar específicamente Emotes (Category 12, Subcategory 39)
-        // Usamos category=12 para "Animations"
+        // URL corregida: usar endpoint de búsqueda general con assetType para emotes
         let url = `https://catalog.roproxy.com/v1/search/items/details?` +
-                  `category=12&` + 
-                  `subcategory=39&` +
-                  `limit=${limit}`;
+                  `category=All&` +
+                  `limit=${limit}&` +
+                  `creatorTargetId=1&` +
+                  `resultsPerPage=${limit}`;
 
         if (keyword) {
             url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
-        if (cursor) {
-            url += `&cursor=${cursor}`;
         }
 
         console.log(`🎬 Buscando Emotes: ${url}`);
@@ -61,7 +56,19 @@ app.get('/api/catalog/search', async (req, res) => {
         const data = await response.json();
         let items = Array.isArray(data.data) ? data.data : [];
 
-        // Mapeamos los resultados al formato que tu juego ya entiende
+        // Filtrar solo animaciones/emotes (assetType 24 o 61)
+        items = items.filter(item => 
+            item.assetType === 24 || 
+            item.assetType === 61 ||
+            item.assetType === 48 ||
+            item.assetType === 49 ||
+            item.assetType === 50 ||
+            item.assetType === 51 ||
+            item.assetType === 52 ||
+            item.assetType === 53 ||
+            item.assetType === 54
+        );
+
         const mappedItems = items.map(item => ({
             Id: item.id,
             Name: item.name || "Emote sin nombre",
