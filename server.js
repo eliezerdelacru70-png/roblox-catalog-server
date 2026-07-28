@@ -14,13 +14,13 @@ app.get('/api/catalog/search', async (req, res) => {
         const limit = req.query.limit || '50';
 
         // URL simplificada - sin filtros de categoría
-        let url = `https://catalog.roproxy.com/v1/search/items/details?` +
-                  `category=All&` +
-                  `limit=${limit}`;
+       let url = `https://catalog.roproxy.com/v2/search/items/details?` +
+          `categoryFilter=CommunityCreations&` +
+          `limit=${limit}`;
 
-        if (keyword) {
-            url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
+if (keyword) {
+    url += `&keyword=${encodeURIComponent(keyword)}`;
+}
 
         console.log(`🎬 Buscando: ${url}`);
 
