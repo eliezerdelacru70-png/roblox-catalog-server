@@ -2,238 +2,90 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-
 const PORT = process.env.PORT || 8080;
-
 
 app.use(cors());
 app.use(express.json());
 
-
-
-async function getThumbnail(assetId) {
-
+app.get('/api/catalog/search', async (req, res) => {
     try {
+        const keyword = req.query.keyword || "";
+        const limit = req.query.limit || 60;
+        const cursor = req.query.cursor || "";
+        const category = req.query.category || "";
+        const assetType = req.query.assetType || "";
 
-        const url =
-        `https://thumbnails.roblox.com/v1/assets?assetIds=${assetId}&size=150x150&format=Png&isCircular=false`;
+        // URL base de la API oficial de Búsqueda de Roblox
+        let url = `https://catalog.roblox.com/v1/search/items/details?limit=${limit}`;
 
-
-        const response = await fetch(url);
-
-        const data = await response.json();
-
-
-        if (
-            data.data &&
-            data.data[0] &&
-            data.data[0].state === "Completed"
-        ) {
-
-            return data.data[0].imageUrl;
-
+        // Si no hay keyword ni categoría específica, pedimos la categoría general para evitar que la API corte la lista
+        if (!keyword && !category && !assetType) {
+            url += `&Category=1`; // Category 1 = Todo el Catálogo
         }
 
+        if (keyword) {
+            url += `&keyword=${encodeURIComponent(keyword)}`;
+        }
 
-    } catch(e){
+        if (category) {
+            url += `&category=${encodeURIComponent(category)}`;
+        }
 
-        console.log(
-            "Error thumbnail:",
-            assetId
-        );
+        if (assetType) {
+            url += `&assetType=${encodeURIComponent(assetType)}`;
+        }
 
+        if (cursor) {
+            url += `&cursor=${encodeURIComponent(cursor)}`;
+        }
+
+        console.log("🔎 Buscando en Roblox:", url);
+
+        const response = await fetch(url, {
+            headers: {
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Roblox API Error ${response.status}`);
+        }
+
+        const data = await response.json();
+        let items = [];
+
+        for (const item of data.data || []) {
+            // Filtrar solo items válidos con nombre
+            if (!item.name || item.name.trim() === "") {
+                continue;
+            }
+
+            items.push({
+                id: item.id,
+                name: item.name,
+                price: item.price ?? 0,
+                assetType: item.assetType || 0,
+                creator: item.creatorName || "Roblox"
+            });
+        }
+
+        console.log(`✅ Enviados ${items.length} items | Siguiente Cursor: ${data.nextPageCursor ? "SÍ" : "NO"}`);
+
+        res.json({
+            data: items,
+            nextPageCursor: data.nextPageCursor || null
+        });
+
+    } catch (error) {
+        console.error("❌ Error en backend:", error.message);
+        res.json({
+            data: [],
+            nextPageCursor: null
+        });
     }
-
-
-    return null;
-
-}
-
-
-
-
-app.get('/api/catalog/search', async (req,res)=>{
-
-
-try{
-
-
-const keyword = req.query.keyword || "";
-const limit = req.query.limit || 50;
-const cursor = req.query.cursor || "";
-
-
-
-let url =
-`https://catalog.roblox.com/v2/search/items/details?limit=${limit}`;
-
-
-
-if(keyword){
-
-    url +=
-    `&keyword=${encodeURIComponent(keyword)}`;
-
-}
-
-
-
-if(cursor){
-
-    url +=
-    `&cursor=${encodeURIComponent(cursor)}`;
-
-}
-
-
-
-console.log(
-    "🔎 Buscando:",
-    url
-);
-
-
-
-
-const response = await fetch(url,{
-
-headers:{
-    "Accept":"application/json",
-    "User-Agent":"Roblox"
-}
-
 });
 
-
-
-if(!response.ok){
-
-throw new Error(
-    "Roblox API "+response.status
-);
-
-}
-
-
-
-
-const data = await response.json();
-
-
-
-let items = [];
-
-
-
-
-for(const item of data.data || []){
-
-
-    // SIN NOMBRE NO PASA
-    if(
-        !item.name ||
-        item.name.trim()===""
-    ){
-
-        continue;
-
-    }
-
-
-
-    // pedir imagen
-    const image =
-    await getThumbnail(item.id);
-
-
-
-    // SIN IMAGEN NO PASA
-    if(!image){
-
-        continue;
-
-    }
-
-
-
-
-    items.push({
-
-        id:item.id,
-
-        name:item.name,
-
-        price:item.price ?? 0,
-
-        image:image,
-
-        assetType:item.assetType || 0,
-
-        creator:
-        item.creator?.name || "Roblox"
-
-    });
-
-
-
-}
-
-
-
-
-
-res.json({
-
-data:items,
-
-nextPageCursor:
-data.nextPageCursor || null
-
-});
-
-
-
-console.log(
-    "✅ Enviados:",
-    items.length
-);
-
-
-
-}
-catch(error){
-
-
-console.error(
-    "❌ Error:",
-    error.message
-);
-
-
-
-res.json({
-
-data:[],
-
-nextPageCursor:null
-
-});
-
-
-}
-
-
-
-});
-
-
-
-
-
-app.listen(PORT,"0.0.0.0",()=>{
-
-console.log(
-`🚀 Servidor corriendo en puerto ${PORT}`
-);
-
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
