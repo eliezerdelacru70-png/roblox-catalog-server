@@ -15,31 +15,27 @@ app.get('/api/catalog/search', async (req, res) => {
         const category = req.query.category || "";
         const assetType = req.query.assetType || "";
 
-        // URL base de la API oficial de Búsqueda de Roblox
+        // URL base de la API oficial de Roblox Catalog (v1)
         let url = `https://catalog.roblox.com/v1/search/items/details?limit=${limit}`;
 
-        // Si no hay keyword ni categoría específica, pedimos la categoría general para evitar que la API corte la lista
+        // Si no se especifica búsqueda ni categoría, forzamos Category=3 (Clothing/Ropa)
+        // para garantizar que la API de Roblox siempre devuelva resultados.
         if (!keyword && !category && !assetType) {
-            url += `&Category=1`; // Category 1 = Todo el Catálogo
+            url += `&Category=3`;
+        } else {
+            if (category) url += `&Category=${encodeURIComponent(category)}`;
+            if (assetType) url += `&AssetType=${encodeURIComponent(assetType)}`;
         }
 
         if (keyword) {
-            url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
-
-        if (category) {
-            url += `&category=${encodeURIComponent(category)}`;
-        }
-
-        if (assetType) {
-            url += `&assetType=${encodeURIComponent(assetType)}`;
+            url += `&Keyword=${encodeURIComponent(keyword)}`;
         }
 
         if (cursor) {
             url += `&cursor=${encodeURIComponent(cursor)}`;
         }
 
-        console.log("🔎 Buscando en Roblox:", url);
+        console.log("🔎 Petición enviada a Roblox:", url);
 
         const response = await fetch(url, {
             headers: {
@@ -49,6 +45,7 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
         if (!response.ok) {
+            console.error(`❌ Error HTTP devuelto por Roblox: ${response.status}`);
             throw new Error(`Roblox API Error ${response.status}`);
         }
 
@@ -56,7 +53,7 @@ app.get('/api/catalog/search', async (req, res) => {
         let items = [];
 
         for (const item of data.data || []) {
-            // Filtrar solo items válidos con nombre
+            // Filtrar elementos vacíos o sin nombre
             if (!item.name || item.name.trim() === "") {
                 continue;
             }
@@ -70,7 +67,7 @@ app.get('/api/catalog/search', async (req, res) => {
             });
         }
 
-        console.log(`✅ Enviados ${items.length} items | Siguiente Cursor: ${data.nextPageCursor ? "SÍ" : "NO"}`);
+        console.log(`✅ Enviados ${items.length} items | Tiene siguiente página: ${data.nextPageCursor ? "SÍ" : "NO"}`);
 
         res.json({
             data: items,
@@ -78,7 +75,7 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Error en backend:", error.message);
+        console.error("❌ Error en el servidor backend:", error.message);
         res.json({
             data: [],
             nextPageCursor: null
