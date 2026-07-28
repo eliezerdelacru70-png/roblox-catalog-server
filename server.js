@@ -15,27 +15,27 @@ app.get('/api/catalog/search', async (req, res) => {
         const category = req.query.category || "";
         const assetType = req.query.assetType || "";
 
-        // URL base de la API oficial de Roblox Catalog (v1)
-        let url = `https://catalog.roblox.com/v1/search/items/details?limit=${limit}`;
+        // URL base de la API v2 oficial de Roblox
+        let url = `https://catalog.roblox.com/v2/search/items/details?limit=${limit}`;
 
-        // Si no se especifica búsqueda ni categoría, forzamos Category=3 (Clothing/Ropa)
-        // para garantizar que la API de Roblox siempre devuelva resultados.
+        // Reglas de la API v2:
         if (!keyword && !category && !assetType) {
-            url += `&Category=3`;
+            // Si la búsqueda es general, v2 exige una categoría y un sortType
+            url += `&category=Clothing&sortType=1`;
         } else {
-            if (category) url += `&Category=${encodeURIComponent(category)}`;
-            if (assetType) url += `&AssetType=${encodeURIComponent(assetType)}`;
+            if (category) url += `&category=${encodeURIComponent(category)}`;
+            if (assetType) url += `&assetType=${encodeURIComponent(assetType)}`;
         }
 
         if (keyword) {
-            url += `&Keyword=${encodeURIComponent(keyword)}`;
+            url += `&keyword=${encodeURIComponent(keyword)}`;
         }
 
         if (cursor) {
             url += `&cursor=${encodeURIComponent(cursor)}`;
         }
 
-        console.log("🔎 Petición enviada a Roblox:", url);
+        console.log("🔎 Petición enviada a Roblox (API v2):", url);
 
         const response = await fetch(url, {
             headers: {
@@ -45,15 +45,14 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
         if (!response.ok) {
-            console.error(`❌ Error HTTP devuelto por Roblox: ${response.status}`);
-            throw new Error(`Roblox API Error ${response.status}`);
+            console.error(`❌ Error HTTP devuelto por Roblox v2: ${response.status}`);
+            throw new Error(`Roblox API v2 Error ${response.status}`);
         }
 
         const data = await response.json();
         let items = [];
 
         for (const item of data.data || []) {
-            // Filtrar elementos vacíos o sin nombre
             if (!item.name || item.name.trim() === "") {
                 continue;
             }
