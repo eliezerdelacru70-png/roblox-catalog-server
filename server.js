@@ -12,19 +12,16 @@ app.get('/api/catalog/search', async (req, res) => {
         const keyword = req.query.keyword || "";
         const limit = req.query.limit || 60;
         const cursor = req.query.cursor || "";
-        const category = req.query.category || "";
+        const category = req.query.category || "AllCategories";
         const assetType = req.query.assetType || "";
 
-        // URL base de la API v2 oficial de Roblox
         let url = `https://catalog.roblox.com/v2/search/items/details?limit=${limit}`;
+        
+        // Siempre incluir categoría y sortType (la API v2 lo requiere)
+        url += `&category=${encodeURIComponent(category)}&sortType=1`;
 
-        // Reglas de la API v2:
-        if (!keyword && !category && !assetType) {
-            // Si la búsqueda es general, v2 exige una categoría y un sortType
-            url += `&category=Clothing&sortType=1`;
-        } else {
-            if (category) url += `&category=${encodeURIComponent(category)}`;
-            if (assetType) url += `&assetType=${encodeURIComponent(assetType)}`;
+        if (assetType) {
+            url += `&assetType=${encodeURIComponent(assetType)}`;
         }
 
         if (keyword) {
@@ -45,7 +42,7 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
         if (!response.ok) {
-            console.error(`❌ Error HTTP devuelto por Roblox v2: ${response.status}`);
+            console.error(`❌ Error HTTP: ${response.status}`);
             throw new Error(`Roblox API v2 Error ${response.status}`);
         }
 
@@ -53,20 +50,21 @@ app.get('/api/catalog/search', async (req, res) => {
         let items = [];
 
         for (const item of data.data || []) {
-            if (!item.name || item.name.trim() === "") {
-                continue;
-            }
+            if (!item.name || item.name.trim() === "") continue;
 
+            // Detectar bundles por itemType
+            const isBundle = item.itemType === "Bundle";
+            
             items.push({
                 id: item.id,
                 name: item.name,
                 price: item.price ?? 0,
-                assetType: item.assetType || 0,
+                assetType: isBundle ? 0 : (item.assetType || 0),
                 creator: item.creatorName || "Roblox"
             });
         }
 
-        console.log(`✅ Enviados ${items.length} items | Tiene siguiente página: ${data.nextPageCursor ? "SÍ" : "NO"}`);
+        console.log(`✅ Enviados ${items.length} items | Siguiente: ${data.nextPageCursor ? "SÍ" : "NO"}`);
 
         res.json({
             data: items,
@@ -74,7 +72,7 @@ app.get('/api/catalog/search', async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Error en el servidor backend:", error.message);
+        console.error("❌ Error:", error.message);
         res.json({
             data: [],
             nextPageCursor: null
@@ -82,6 +80,6 @@ app.get('/api/catalog/search', async (req, res) => {
     }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
